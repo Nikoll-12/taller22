@@ -11,10 +11,10 @@ const r = 100; // radio en píxeles
 // Convierte coordenadas matemáticas al sistema de píxeles del canvas
 function toPixel(x, y) {
   return [
-    Math.round(WIDTH / 2 + x),
-    Math.round(HEIGHT / 2 - y)
+    Math.round(W / 2 + x),
+    Math.round(H / 2 - y)
   ];
-}
+}   
 function plotPixel(x, y) {
   const [px, py] = toPixel(x, y);
   ctx.fillRect(px, py, 1, 1);
