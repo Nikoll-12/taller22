@@ -53,3 +53,19 @@ function bresenhamCircle(h, k, r) {
 function drawAxes() {
   ctx.strokeStyle = "#aaa";
   ctx.lineWidth = 1;
+//Eje x 
+    ctx.beginPath();
+    ctx.moveTo(0, H / 2);
+    ctx.lineTo(W, H / 2);
+    ctx.stroke();
+//Eje y
+    ctx.beginPath();
+    ctx.moveTo(W / 2, 0);
+    ctx.lineTo(W / 2, H);
+    ctx.stroke();
+}
+//Dibujar la circunferencia usando el algoritmo de Bresenham//
+drawAxes();
+bresenhamCircle(h, k, r);
+
+
