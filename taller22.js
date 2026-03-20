@@ -1,0 +1,51 @@
+//Agregar el Canvas del HTML//
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+const W = canvas.width, H = canvas.height;
+
+// Parámetros de la circunferencia// 
+const h = 0;   // centro x
+const k = 0;   // centro y
+const r = 100; // radio en píxeles
+// Convierte coordenadas matemáticas al sistema de píxeles del canvas
+function toPixel(x, y) {
+  return [
+    Math.round(WIDTH / 2 + x),
+    Math.round(HEIGHT / 2 - y)
+  ];
+}
+function plotPixel(x, y) {
+  const [px, py] = toPixel(x, y);
+  ctx.fillRect(px, py, 1, 1);
+}
+// Algoritmo de Bresenham para circunferencia
+// Traza los 8 octantes usando simetría
+function bresenhamCircle(h, k, r) {
+  let x = 0;
+  let y = r;
+  let d = 3 - 2 * r; // parámetro de decisión inicial
+
+  ctx.fillStyle = "black";
+
+  while (x <= y) {
+    // Los 8 puntos simétricos de la circunferencia
+    plotPixel(h + x, k + y);
+    plotPixel(h - x, k + y);
+    plotPixel(h + x, k - y);
+    plotPixel(h - x, k - y);
+    plotPixel(h + y, k + x);
+    plotPixel(h - y, k + x);
+    plotPixel(h + y, k - x);
+    plotPixel(h - y, k - x);
+
+    // Actualizar parámetro de decisión
+    if (d < 0) {
+      d = d + 4 * x + 6;
+    } else {
+      d = d + 4 * (x - y) + 10;
+      y--;
+    }
+    x++;
+  }
+}
