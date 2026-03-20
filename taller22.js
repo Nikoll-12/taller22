@@ -79,6 +79,14 @@ function drawAxes() {
     ctx.moveTo(W / 2, 0);
     ctx.lineTo(W / 2, H);
     ctx.stroke();
+    //Numeros dentro del eje// 
+     ctx.fillStyle = "#999";
+    ctx.font = "10px sans-serif";
+    ctx.textAlign = "center";
+    //Pixeles en los que ya se pone un número// 
+    const paso = 40;
+    
+
 }
 //Dibujar la circunferencia usando el algoritmo de Bresenham//
 drawAxes();
