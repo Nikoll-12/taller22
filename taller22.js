@@ -90,10 +90,22 @@ function drawAxes() {
 
     const px = W/2 + i * paso; // posición en X del número
     const py = H/2 + i * paso; // posición en Y del número
+    // Marcas y números sobre el eje X
+    ctx.beginPath(); ctx.moveTo(px, H/2 - 4); ctx.lineTo(px, H/2 + 4); ctx.stroke();
+    ctx.fillText(i * paso, px, H/2 + 14);
 
+    // Marcas y números sobre el eje Y
+    ctx.beginPath(); ctx.moveTo(W/2 - 4, py); ctx.lineTo(W/2 + 4, py); ctx.stroke();
+    ctx.textAlign = "right";
+    ctx.fillText(-i * paso, W/2 - 8, py + 4);
+    ctx.textAlign = "center";
+  }
+
+  // Origen
+  ctx.fillText("0", W/2 - 10, H/2 + 14);
 }
+
 //Dibujar la circunferencia usando el algoritmo de Bresenham//
 drawAxes();
 bresenhamCircle(h, k, r);
-
 
