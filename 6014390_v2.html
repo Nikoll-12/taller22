@@ -1,0 +1,465 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/> <!--Me permite ajustar la página al tipo de pantalla que yo esté usando-->
+  <title>Triángulo — DDA & Bresenham</title>
+  <!--Cargar las fuentes de google fonts para el diseño-->
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet"/>
+  <!--Colores principales-->
+  <style>
+    :root { 
+      --blanco:       #ffffff;
+      --fondo:        #f8f3f4;          
+      --vino-medio:   #8c2a3e;        
+      --vino-suave:   #c4788a;         
+      --texto:        #2a1018;        
+      --texto-gris:   #8a6070;
+      --vino: #6b1a2a;   
+    --glass-fondo:  rgba(255, 255, 255, 0.60); /*Fondo semitransparente*/ 
+      --glass-borde:  rgba(107, 26, 42, 0.18);     
+      --glass-sombra: 0 8px 32px rgba(107,26,42,0.14), 0 2px 8px rgba(107,26,42,0.08);
+      --glass-blur:   blur(20px);/* qué tanto desenfoca */
+      --radio: 1.1 rem /*Unidad de medida que sustituye los px para que se  adapta a la pantalla*/
+  }
+  /*Resetear la página para que el navegador no le ponga margenes*/ 
+   *, *::before, *::after {
+      box-sizing: border-box;   /* el padding NO agrega tamaño extra */
+      margin: 0;
+      padding: 0;
+    }
+    /*Parte del body del CSS la cual es una regla de estilo*/ 
+    body{
+       /* Fondo principal: blanco cálido */
+      background-color: var(--fondo);
+      background-image:
+        radial-gradient(ellipse 50% 40% at 0% 0%,   rgba(107,26,42,0.10) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 100% 100%, rgba(107,26,42,0.08) 0%, transparent 60%),
+        radial-gradient(circle, rgba(107,26,42,0.12) 1px, transparent 1px);
+      background-size: 100%, 100%, 32px 32px;  /* el patrón se repite cada 32px */
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--texto);
+      min-height: 100vh;
+      /* Flexbox: apila el contenido en columna, centrado */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2.5rem 1.5rem 4rem;
+      gap: 2rem;
+    }
+  .glass {
+      background: var(--glass-fondo);
+      /* backdrop-filter: borrosa lo que está DETRÁS del elemento */
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur); /* Safari */
+      border: 1px solid var(--glass-borde);
+      border-radius: var(--radio);
+      box-shadow: var(--glass-sombra);
+  }
+  header{ 
+      text-align: center;
+      /* Animación de entrada: baja desde arriba */
+      animation: bajarDesdeArriba 0.6s ease both;
+    }
+    header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2rem, 4vw, 3rem);  /* tamaño adaptable */
+      font-weight: 700;
+      color: var(--vino);
+      letter-spacing: 0.02em;
+    }
+    header p {
+      margin-top: 0.4rem;
+      font-size: 0.68rem;
+      color: var(--texto-gris);
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 290px 1fr;
+      gap: 1.5rem;
+      width: 100%;
+      max-width: 1160px;
+      animation: subirDesdeAbajo 0.7s ease 0.1s both;
+    }
+    /* En pantallas pequeñas, apila las columnas */
+    @media (max-width: 820px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+
+    /* ── PANEL IZQUIERDO (controles) ── */
+    .panel {
+      padding: 1.6rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+    }
+
+    /* Título de sección dentro del panel */
+    .titulo-seccion {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--vino);
+      border-bottom: 1px solid var(--glass-borde);
+      padding-bottom: 0.6rem;
+    }
+
+    /* Etiqueta pequeña sobre grupos */
+    .etiqueta {
+      font-size: 0.62rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--texto-gris);
+      margin-bottom: 0.3rem;
+    }
+
+    /*
+      TARJETA DE PUNTO (A, B, C)
+      Pequeña caja con fondo suave que agrupa
+      los inputs de X e Y de cada vértice.
+    */
+    .tarjeta-punto {
+      background: rgba(107, 26, 42, 0.04);
+      border: 1px solid rgba(107, 26, 42, 0.12);
+      border-radius: 0.75rem;
+      padding: 0.85rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      transition: border-color 0.2s;
+    }
+    .tarjeta-punto:hover {
+      border-color: rgba(107, 26, 42, 0.28);
+    }
+
+    /* Encabezado del punto: bolita de color + nombre */
+    .punto-encabezado {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'Playfair Display', serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--vino);
+    }
+    .bolita {
+      width: 9px;
+      height: 9px;
+      border-radius: 2px;    /* casi cuadrado → más geométrico */
+    }
+    .b-a { background: #6b1a2a; }
+    .b-b { background: #9b3a50; }
+    .b-c { background: #c4788a; }
+
+    /* Fila de dos inputs (X e Y) */
+    .fila-coord {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+
+    /* Cada campo con su etiqueta */
+    .campo {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+    .campo label {
+      font-size: 0.6rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--texto-gris);
+    }
+    .campo input[type="number"] {
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid rgba(107, 26, 42, 0.22);
+      border-radius: 0.45rem;
+      color: var(--texto);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.82rem;
+      padding: 0.42rem 0.6rem;
+      width: 100%;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      -moz-appearance: textfield;
+    }
+    .campo input[type="number"]::-webkit-inner-spin-button { display: none; }
+    .campo input[type="number"]:focus {
+      outline: none;
+      border-color: var(--vino);
+      box-shadow: 0 0 0 3px rgba(107, 26, 42, 0.12);
+    }
+
+    /* ── CONTROL DE GROSOR ── */
+    .fila-grosor {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+    .fila-grosor input[type="range"] {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 3px;
+      background: linear-gradient(to right, var(--vino), var(--vino-suave));
+      border-radius: 2px;
+      cursor: pointer;
+    }
+    .fila-grosor input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 15px;
+      height: 15px;
+      background: var(--vino);
+      border-radius: 50%;
+      border: 2px solid white;
+      box-shadow: 0 1px 4px rgba(107,26,42,0.35);
+    }
+    #grosorVal {
+      font-size: 0.75rem;
+      color: var(--vino);
+      min-width: 1.2rem;
+      text-align: center;
+    }
+
+    /* ── BOTONES ── */
+    .grupo-botones {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .btn {
+      border: none;
+      border-radius: 0.6rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.65rem 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+    }
+    /* Botón sólido vino → acción principal */
+    .btn-solido {
+      background: var(--vino);
+      color: white;
+    }
+    .btn-solido:hover {
+      background: var(--vino-medio);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 18px rgba(107,26,42,0.32);
+    }
+    /* Botón contorno → acción secundaria */
+    .btn-contorno {
+      background: rgba(107, 26, 42, 0.06);
+      border: 1px solid rgba(107, 26, 42, 0.28);
+      color: var(--vino);
+    }
+    .btn-contorno:hover {
+      background: rgba(107, 26, 42, 0.13);
+      transform: translateY(-1px);
+    }
+    .btn:active { transform: translateY(0) scale(0.99); }
+
+    /* ── CAJA DE RESULTADO ── */
+    #resultado {
+      border-radius: 0.6rem;
+      padding: 0.7rem 0.9rem;
+      font-size: 0.71rem;
+      line-height: 1.55;
+      min-height: 2.6rem;
+      display: flex;
+      align-items: center;
+      border: 1px solid transparent;
+      transition: all 0.3s;
+      letter-spacing: 0.02em;
+    }
+    #resultado.idle { /* estado inicial */
+      background: rgba(107,26,42,0.04);
+      border-color: rgba(107,26,42,0.12);
+      color: var(--texto-gris);
+    }
+    #resultado.si { /* ¡sí forma triángulo! */
+      background: rgba(107,26,42,0.09);
+      border-color: rgba(107,26,42,0.35);
+      color: var(--vino);
+    }
+    #resultado.no { /* no forma triángulo */
+      background: rgba(180,50,70,0.08);
+      border-color: rgba(180,50,70,0.28);
+      color: #a03050;
+    }
+
+    /* ── PANEL DERECHO (canvas) ── */
+    .panel-canvas {
+      padding: 1.4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+    }
+    .canvas-encabezado {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--glass-borde);
+      padding-bottom: 0.6rem;
+    }
+    .canvas-titulo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--vino);
+    }
+    /* Etiqueta pequeña que muestra qué algoritmo se usó */
+    .badge-algo {
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0.22rem 0.65rem;
+      border-radius: 99px;
+      border: 1px solid rgba(107,26,42,0.25);
+      color: var(--texto-gris);
+    }
+
+    /* El canvas en sí */
+    #canvas {
+      display: block;
+      width: 100%;
+      border-radius: 0.6rem;
+      border: 1px solid rgba(107,26,42,0.14);
+      cursor: crosshair;
+    }
+
+    /* Caja de información del algoritmo */
+    .caja-info {
+      background: rgba(107, 26, 42, 0.04);
+      border: 1px solid rgba(107, 26, 42, 0.12);
+      border-radius: 0.6rem;
+      padding: 0.7rem 1rem;
+      font-size: 0.69rem;
+      line-height: 1.75;
+      color: var(--texto-gris);
+    }
+    .caja-info strong {
+      color: var(--vino);
+      font-weight: 400;
+    }
+
+    /* ── ANIMACIONES ── */
+    @keyframes bajarDesdeArriba {
+      from { opacity: 0; transform: translateY(-18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes subirDesdeAbajo {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Título de la página -->
+  <header>
+    <h1>△ Triángulo</h1>
+    <p>Gráficos por Computador · DDA · Bresenham</p>
+  </header>
+
+  <!-- Las dos columnas: controles + canvas -->
+  <div class="layout">
+
+    <!-- Columna izquierda: los inputs y botones -->
+    <aside class="panel glass">
+
+  <div class="titulo-seccion">Coordenadas</div>
+
+  <!-- PUNTO A -->
+  <div class="tarjeta-punto">
+    <div class="punto-encabezado">
+      <span class="bolita b-a"></span> Punto A
+    </div>
+    <div class="fila-coord">
+      <div class="campo">
+        <label for="x1">Eje X</label>
+        <input id="x1" type="number" value="100"/>
+      </div>
+      <div class="campo">
+        <label for="y1">Eje Y</label>
+        <input id="y1" type="number" value="80"/>
+      </div>
+    </div>
+  </div>
+
+  <!-- PUNTO B -->
+  <div class="tarjeta-punto">
+    <div class="punto-encabezado">
+      <span class="bolita b-b"></span> Punto B
+    </div>
+    <div class="fila-coord">
+      <div class="campo">
+        <label for="x2">Eje X</label>
+        <input id="x2" type="number" value="280"/>
+      </div>
+      <div class="campo">
+        <label for="y2">Eje Y</label>
+        <input id="y2" type="number" value="80"/>
+      </div>
+    </div>
+  </div>
+
+  <!-- PUNTO C -->
+  <div class="tarjeta-punto">
+    <div class="punto-encabezado">
+      <span class="bolita b-c"></span> Punto C
+    </div>
+    <div class="fila-coord">
+      <div class="campo">
+        <label for="x3">Eje X</label>
+        <input id="x3" type="number" value="190"/>
+      </div>
+      <div class="campo">
+        <label for="y3">Eje Y</label>
+        <input id="y3" type="number" value="230"/>
+      </div>
+    </div>
+  </div>
+
+  <!-- GROSOR -->
+  <div>
+    <div class="etiqueta">Grosor del trazo</div>
+    <div class="fila-grosor">
+      <input type="range" id="grosor" min="1" max="4" value="1"
+             oninput="document.getElementById('grosorVal').textContent=this.value"/>
+      <span id="grosorVal">1</span>
+    </div>
+  </div>
+
+  <!-- RESULTADO -->
+  <div id="resultado" class="idle">
+    Ingresa coordenadas y presiona verificar.
+  </div>
+
+  <!-- BOTONES -->
+  <div class="grupo-botones">
+    <button class="btn btn-contorno" onclick="verificar()">◈ Verificar triángulo</button>
+    <button class="btn btn-solido"   onclick="trazarDDA()">▶ Trazar con DDA</button>
+    <button class="btn btn-solido"   onclick="trazarBresenham()">▶ Trazar con Bresenham</button>
+    <button class="btn btn-contorno" onclick="limpiar()">↺ Limpiar canvas</button>
+  </div>
+
+</aside>
+    <!-- Columna derecha: el canvas -->
+    <div class="panel-canvas glass">
+      <canvas id="canvas" width="720" height="490"></canvas>
+    </div>
+
+  </div>
+
+  <!-- El JS va al FINAL, después de todo el contenido -->
+  <script src="6014390_V2.js"></script>
+</body>
+
+    
