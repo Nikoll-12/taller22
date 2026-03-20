@@ -85,7 +85,11 @@ function drawAxes() {
     ctx.textAlign = "center";
     //Pixeles en los que ya se pone un número// 
     const paso = 40;
-    
+    for (let i = -4; i <= 4; i++) {
+    if (i === 0) continue; // el centro no se marca
+
+    const px = W/2 + i * paso; // posición en X del número
+    const py = H/2 + i * paso; // posición en Y del número
 
 }
 //Dibujar la circunferencia usando el algoritmo de Bresenham//
