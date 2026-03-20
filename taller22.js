@@ -49,3 +49,7 @@ function bresenhamCircle(h, k, r) {
     x++;
   }
 }
+//Dibujar cada uno de los ejes de referencia de la coordenada de la circunferencia// 
+function drawAxes() {
+  ctx.strokeStyle = "#aaa";
+  ctx.lineWidth = 1;
