@@ -5,9 +5,25 @@ const ctx = canvas.getContext('2d');
 const W = canvas.width, H = canvas.height;
 
 // Parámetros de la circunferencia// 
-const h = 0;   // centro x
-const k = 0;   // centro y
-const r = 100; // radio en píxeles
+function draw() {
+  ctx.clearRect(0, 0, W, H);           // 1. limpia
+
+  const h = +document.getElementById('hSlider').value;  // 2. lee sliders
+  const k = +document.getElementById('kSlider').value;
+  const r = +document.getElementById('rSlider').value;
+
+  document.getElementById('hVal').textContent = h;
+  document.getElementById('kVal').textContent = k;
+  document.getElementById('rVal').textContent = r;
+
+  drawAxes();
+  bresenhamCircle(h, k, r);            // 3. redibuja
+}
+document.getElementById('hSlider').addEventListener('input', draw);
+document.getElementById('kSlider').addEventListener('input', draw);
+document.getElementById('rSlider').addEventListener('input', draw);
+
+draw();
 // Convierte coordenadas matemáticas al sistema de píxeles del canvas
 function toPixel(x, y) {
   return [
